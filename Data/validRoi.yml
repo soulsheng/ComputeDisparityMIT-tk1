@@ -1,0 +1,11 @@
+%YAML:1.0
+validRoi1: !!opencv-matrix
+   rows: 1
+   cols: 4
+   dt: i
+   data: [ 0, 23, 1, 1 ]
+validRoi2: !!opencv-matrix
+   rows: 1
+   cols: 4
+   dt: i
+   data: [ 2, 29, 1, 1 ]
