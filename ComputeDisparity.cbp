@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="ComputeDisparity" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/ComputeDisparity" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option projectCompilerOptionsRelation="2" />
+				<Compiler>
+					<Add option="-std=c++11" />
+					<Add option="-g" />
+					<Add directory="/usr/include/" />
+					<Add directory="/usr/local/cuda/include" />
+					<Add directory="/usr/include/opencv" />
+				</Compiler>
+				<Linker>
+					<Add library="opencv_core" />
+					<Add library="opencv_imgproc" />
+					<Add library="cudart" />
+					<Add library="opencv_highgui" />
+					<Add library="opencv_calib3d" />
+					<Add directory="/usr/lib/" />
+					<Add directory="/usr/local/cuda/lib" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/ComputeDisparity" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-s" />
+				</Compiler>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="`opencv-config --cxxflags`" />
+		</Compiler>
+		<Linker>
+			<Add option="`opencv-config --ldstaticflags`" />
+		</Linker>
+		<Unit filename="ComputeDisparityMIT.cpp" />
+		<Unit filename="getSADCUDA.cu" />
+		<Unit filename="getSADCUDA.cuh" />
+		<Unit filename="helper_timer.h" />
+		<Unit filename="opencv-stereo-util.cpp" />
+		<Unit filename="opencv-stereo-util.hpp" />
+		<Unit filename="pushbroom-stereo-def.hpp" />
+		<Unit filename="pushbroom-stereo.cpp" />
+		<Unit filename="pushbroom-stereo.hpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
