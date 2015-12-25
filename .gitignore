@@ -2,6 +2,11 @@ bin
 obj
 ComputeDisparity.depend
 ComputeDisparity.layout
+*.o
+ComputeDisparity
+ComputeDisparity-cpu
+ComputeDisparity-gpu
+Makefile~
 /vc10/ipch
 /vc10/*.sdf
 /vc10/*.pdb
