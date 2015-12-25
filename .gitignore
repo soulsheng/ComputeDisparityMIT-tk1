@@ -11,3 +11,4 @@ ComputeDisparity.layout
 /vc10/Debug
 /vc10/*.opensdf
 /vc10/*.deps
+/vc10/Release
