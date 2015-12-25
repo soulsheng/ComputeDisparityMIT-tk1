@@ -26,6 +26,7 @@ int main( )
 	configCD( stereoCalibration, state);
 
 	PushbroomStereo pushbroom_stereo;
+	pushbroom_stereo.initialize(matL.cols, matL.rows, matL.step );
 
 
 	StopWatchInterface	*timer;

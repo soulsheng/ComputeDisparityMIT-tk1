@@ -10,7 +10,7 @@
 
 #include "pushbroom-stereo-def.hpp"
 
-#define	USE_GPU	0
+#define	USE_GPU	1
 
 #if USE_GPU
 #include "getSADCUDA.cuh"
