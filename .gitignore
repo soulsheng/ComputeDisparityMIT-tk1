@@ -2,3 +2,12 @@ bin
 obj
 ComputeDisparity.depend
 ComputeDisparity.layout
+/vc10/ipch
+/vc10/*.sdf
+/vc10/*.pdb
+/Debug
+/vc10/*.suo
+/vc10/Data
+/vc10/Debug
+/vc10/*.opensdf
+/vc10/*.deps
