@@ -23,8 +23,8 @@ using namespace cv::gpu;
 
 #define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-3)
 #define INVARIANCE_CHECK_HORZ_OFFSET_MAX 3
-//#define USE_GPU
-// #define USE_GPU_OCV
+//#define USE_GPU 1
+//#define USE_GPU_OCV
 
                           // all the parameters in a nice integer range
 
@@ -55,50 +55,10 @@ void PushbroomStereo::ProcessImages(Mat leftImage, Mat rightImage, cv::vector<Po
     // split things up so we can parallelize
     int rows = leftImage.rows;
 
-	
+
 	StopWatchInterface	*timer;
 	sdkCreateTimer( &timer );
 
-
-#if USE_GPU_OCV
-	//GpuMat d_leftImage(leftImage);
-	//GpuMat d_mapxL(state.mapxL);
-    	//GpuMat d_remapped_left;
-	//gpu::remap( d_leftImage, d_remapped_left, d_mapxL, GpuMat(), INTER_NEAREST);
-
-	Mat remapped_left(state.mapxL.rows, state.mapxL.cols, leftImage.depth());
-	//d_remapped_left.download(remapped_left);
-    	remap( leftImage, remapped_left, state.mapxL, Mat(), INTER_NEAREST);
-
-	//GpuMat d_rightImage(rightImage);
-	//GpuMat d_mapxR(state.mapxR);
-    	//GpuMat d_remapped_right;
-	//gpu::remap( d_rightImage, d_remapped_right, d_mapxR, GpuMat(), INTER_NEAREST);
-	Mat remapped_right(state.mapxR.rows, state.mapxR.cols, rightImage.depth());
-	//d_remapped_right.download(remapped_right);
-	remap( rightImage, remapped_right, state.mapxR, Mat(), INTER_NEAREST);
-
-	sdkResetTimer(&timer);
-	sdkStartTimer(&timer);
-        GpuMat d_remapped_left(remapped_left);
-	GpuMat d_laplacian_left;
-	gpu::Laplacian( d_remapped_left, d_laplacian_left, -1, 3, 1, 0);
-
-	Mat laplacian_left(remapped_left.rows, remapped_left.cols, remapped_left.depth());
-	d_laplacian_left.download(laplacian_left);
-
-	GpuMat d_remapped_right(remapped_right);
-	GpuMat d_laplacian_right;
-	gpu::Laplacian( d_remapped_right, d_laplacian_right, -1, 3, 1, 0);
-
-
-	Mat laplacian_right(remapped_right.rows, remapped_right.cols, remapped_right.depth());
-	d_laplacian_right.download(laplacian_right);
-	
-	sdkStopTimer( &timer );
-	//printf(" lap time %.2f\n", sdkGetTimerValue( &timer ) );
-
-#else	
 	sdkResetTimer( &timer );
 	sdkStartTimer( &timer );
 
@@ -116,9 +76,32 @@ void PushbroomStereo::ProcessImages(Mat leftImage, Mat rightImage, cv::vector<Po
 	sdkStopTimer( &timer );
 	printf("remap timer: %.2f ms \n", sdkGetTimerValue( &timer) );
 
-	
 	sdkResetTimer( &timer );
 	sdkStartTimer( &timer );
+
+#ifdef USE_GPU_OCV
+    int nrows = remapped_left.rows;
+    int ncols = remapped_left.cols;
+    int nstep = remapped_left.step;
+    int ntype = remapped_left.type();
+
+    uchar* dml = m_sadCalculator.d_mapL;
+    uchar* dmr = m_sadCalculator.d_mapR;
+    uchar* dll = m_sadCalculator.d_laplacianL;
+    uchar* dlr = m_sadCalculator.d_laplacianR;
+
+    GpuMat d_remapped_left(nrows, ncols, ntype, dml, nstep);
+    d_remapped_left.upload(remapped_left);
+	GpuMat d_laplacian_left(nrows, ncols, ntype, dll, nstep);
+	gpu::Laplacian( d_remapped_left, d_laplacian_left, -1, 3, 1, 0);
+
+	GpuMat d_remapped_right(nrows, ncols, ntype, dmr, nstep);
+	d_remapped_right.upload(remapped_right);
+	GpuMat d_laplacian_right(nrows, ncols, ntype, dlr, nstep);
+	gpu::Laplacian( d_remapped_right, d_laplacian_right, -1, 3, 1, 0);
+
+    Mat laplacian_left(remapped_left), laplacian_right(remapped_right);
+#else
 
     Mat laplacian_left(remapped_left.rows, remapped_left.cols, remapped_left.depth());
     Mat laplacian_right(remapped_right.rows, remapped_right.cols, remapped_right.depth());
@@ -128,10 +111,10 @@ void PushbroomStereo::ProcessImages(Mat leftImage, Mat rightImage, cv::vector<Po
 
 	Laplacian( remapped_right, laplacian_right, -1, 3, 1, 0, BORDER_DEFAULT);
 
+#endif
+
 	sdkStopTimer( &timer );
 	printf("laplacian timer: %.2f ms \n", sdkGetTimerValue( &timer) );
-
-#endif
 
 	sdkResetTimer( &timer );
 	sdkStartTimer( &timer );
@@ -155,7 +138,7 @@ void PushbroomStereo::ProcessImages(Mat leftImage, Mat rightImage, cv::vector<Po
 	pointVector3d, pointVector2d, pointColors,
 	0, rows_round - 1, state );
 
-		
+
 	sdkStopTimer( &timer );
 	printf("RunStereo timer: %.2f ms \n", sdkGetTimerValue( &timer) );
 
@@ -163,7 +146,7 @@ void PushbroomStereo::ProcessImages(Mat leftImage, Mat rightImage, cv::vector<Po
     // compute the required size of our return vector
     // this prevents multiple memory allocations
     numPoints = pointVector3dArray.size();
-    
+
     pointVector3d->reserve(numPoints);
     pointColors->reserve(numPoints);
 
@@ -204,7 +187,7 @@ void PushbroomStereo::RunStereoPushbroomStereo(PushbroomStereoStateThreaded *sta
     int row_end = statet->row_end;
 
     PushbroomStereoState state = statet->state;
-	
+
 	RunStereoPushbroomStereo( leftImage, rightImage, laplacian_left, laplacian_right,
 	pointVector3d, pointVector2d, pointColors,
 	row_start, row_end, state );
@@ -246,9 +229,14 @@ void PushbroomStereo::RunStereoPushbroomStereo( Mat leftImage, Mat rightImage, M
 		sdkResetTimer( &timer );
 		sdkStartTimer( &timer );
 
+        bool blapInDevice = false;
+#ifdef USE_GPU_OCV
+        blapInDevice = true;
+#endif
+
 		//GetSADBlock(row_start, row_end, blockSize, startJ, stopJ, sadArray, leftImage, rightImage, laplacian_left, laplacian_right, state);
 		m_sadCalculator.runGetSAD( row_start, row_end, startJ, stopJ, sadArray, leftImage.data, rightImage.data, laplacian_left.data, laplacian_right.data, leftImage.step,
-			state.blockSize, state.disparity, state.sobelLimit );
+			state.blockSize, state.disparity, state.sobelLimit, blapInDevice );
 
 		sdkStopTimer( &timer );
 		//printf("RunStereo bottleneck timer: %.2f ms \n", sdkGetTimerValue( &timer) );
@@ -262,7 +250,7 @@ void PushbroomStereo::RunStereoPushbroomStereo( Mat leftImage, Mat rightImage, M
 		for (int y=0; y< gridY; y++)
 		{
 			for (int x=0; x< gridX; x++)
-			{               
+			{
                 // check to see if the SAD is below the threshold,
                 // indicating a hit
 				int i = row_start + y * blockSize;

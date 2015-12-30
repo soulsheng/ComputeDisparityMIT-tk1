@@ -4,7 +4,7 @@
 #include "cuda_runtime.h"
 
 	__global__
-	void GetSADGPU_kernel(uchar* leftImage, uchar* rightImage, uchar* laplacianL, uchar* laplacianR, int nstep, int startJ, int row_start, 
+	void GetSADGPU_kernel(uchar* leftImage, uchar* rightImage, uchar* laplacianL, uchar* laplacianR, int nstep, int startJ, int row_start,
 		int blockSize, int disparity, int sobelLimit,
 		int *sadArray, int threadsPerBlock  )
 	{
@@ -79,11 +79,12 @@
 		{
 			sadArray[ y * threadsPerBlock + x] =  -1;
 		}
-		else 
+		else
 			sadArray[ y * threadsPerBlock + x] =  NUMERIC_CONST*(float)sad/(float)laplacian_value;
 	}
 
-	void GetSadCUDA::runGetSAD( int row_start, int row_end, int startJ, int stopJ, int * sadArray, uchar* leftImage, uchar* rightImage, uchar* laplacianL, uchar* laplacianR, int nstep, int blockSize, int disparity, int sobelLimit )
+	void GetSadCUDA::runGetSAD( int row_start, int row_end, int startJ, int stopJ, int * sadArray, uchar* leftImage, uchar* rightImage, uchar* laplacianL, uchar* laplacianR, int nstep, int blockSize, int disparity, int sobelLimit,
+	bool blapInDevice /*= false*/ )
 	{
 #if 0
 		int gridY = (row_end - row_start)/blockSize;
@@ -94,7 +95,7 @@
 			{
 				int i = row_start + y * blockSize;
 				int j = startJ + x * blockSize;
-				GetSAD_kernel(leftImage, rightImage, laplacianL, laplacianR, nstep, j, i, 
+				GetSAD_kernel(leftImage, rightImage, laplacianL, laplacianR, nstep, j, i,
 					blockSize, disparity, sobelLimit,
 					x, y, blockDim, sadArray );
 			}
@@ -103,14 +104,17 @@
 #else
 		cudaMemcpy( d_leftImage, leftImage, nSizeBuffer, cudaMemcpyHostToDevice );
 		cudaMemcpy( d_rightImage, rightImage, nSizeBuffer, cudaMemcpyHostToDevice );
+
+		if( !blapInDevice ) {
 		cudaMemcpy( d_laplacianL, laplacianL, nSizeBuffer, cudaMemcpyHostToDevice );
 		cudaMemcpy( d_laplacianR, laplacianR, nSizeBuffer, cudaMemcpyHostToDevice );
+        }
 
 		int blocksPerGrid = (row_end - row_start)/blockSize;
 		int threadsPerBlock = (stopJ - startJ)/blockSize;
 
-		GetSADGPU_kernel<<<blocksPerGrid, threadsPerBlock+10>>> ( d_leftImage, d_rightImage, d_laplacianL, d_laplacianR, nstep, startJ, row_start, 
-					blockSize, disparity, sobelLimit, 
+		GetSADGPU_kernel<<<blocksPerGrid, threadsPerBlock+10>>> ( d_leftImage, d_rightImage, d_laplacianL, d_laplacianR, nstep, startJ, row_start,
+					blockSize, disparity, sobelLimit,
 					d_sadArray, threadsPerBlock );
 
 		cudaMemcpy( sadArray, d_sadArray, blocksPerGrid*threadsPerBlock*sizeof(int), cudaMemcpyDeviceToHost );
@@ -128,7 +132,8 @@
 		cudaMalloc( &d_rightImage, nSizeBuffer );
 		cudaMalloc( &d_laplacianL, nSizeBuffer );
 		cudaMalloc( &d_laplacianR, nSizeBuffer );
-
+        cudaMalloc( &d_mapL, nSizeBuffer );
+		cudaMalloc( &d_mapR, nSizeBuffer );
 		cudaMalloc( &d_sadArray, nSizeBuffer*sizeof(int) );
 	}
 
@@ -141,7 +146,8 @@
 		cudaFree( d_rightImage );
 		cudaFree( d_laplacianL );
 		cudaFree( d_laplacianR );
-
+        cudaFree( d_mapL );
+		cudaFree( d_mapR );
 		cudaFree( d_sadArray );
 
 		d_leftImage = NULL;
