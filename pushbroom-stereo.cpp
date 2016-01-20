@@ -24,7 +24,7 @@ using namespace cv::gpu;
 #define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-3)
 #define INVARIANCE_CHECK_HORZ_OFFSET_MAX 3
 #define USE_GPU 1
-#define USE_GPU_OCV
+//#define USE_GPU_OCV
 
                           // all the parameters in a nice integer range
 
