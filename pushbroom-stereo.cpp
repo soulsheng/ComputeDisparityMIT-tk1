@@ -23,12 +23,12 @@ using namespace cv::gpu;
 
 #define INVARIANCE_CHECK_HORZ_OFFSET_MIN (-3)
 #define INVARIANCE_CHECK_HORZ_OFFSET_MAX 3
-//#define USE_GPU 1
-//#define USE_GPU_OCV
+#define USE_GPU 1
+#define USE_GPU_OCV
 
                           // all the parameters in a nice integer range
 
-PushbroomStereo::PushbroomStereo() {
+PushbroomStereo::PushbroomStereo() { 
 
 }
 
@@ -101,6 +101,9 @@ void PushbroomStereo::ProcessImages(Mat leftImage, Mat rightImage, cv::vector<Po
 	gpu::Laplacian( d_remapped_right, d_laplacian_right, -1, 3, 1, 0);
 
     Mat laplacian_left(remapped_left), laplacian_right(remapped_right);
+	d_laplacian_left.download(laplacian_left);
+	d_laplacian_right.download(laplacian_right);
+
 #else
 
     Mat laplacian_left(remapped_left.rows, remapped_left.cols, remapped_left.depth());
